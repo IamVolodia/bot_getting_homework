@@ -67,7 +67,7 @@ def get_all_admins():
     return data
 
 
-# Удаление админа
+# Удаление прав админа пользователя
 def del_admin(user_id):
     # Создание подключения к базе данных
     conn = sqlite3.connect('models//database.db')
@@ -81,7 +81,7 @@ def del_admin(user_id):
     conn.close()
 
 
-# Удаление админа
+# Добавление прав админа пользователю
 def add_admin(user_id):
     # Создание подключения к базе данных
     conn = sqlite3.connect('models//database.db')
@@ -107,3 +107,67 @@ def get_user(user_id):
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
+
+    return data
+
+
+# Удаление группы
+def del_group(group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Удаляем группу
+    cursor.execute(f"DELETE FROM groups WHERE group_id = ? LIMIT 1;", (group_id,))
+    conn.commit()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+
+# Получение группы по имени
+def get_group_by_name(name):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM groups WHERE name == ?", (name,))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data
+
+
+# Дбавление группы
+def add_group(name, password):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM groups WHERE name == ?", (name,))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data
+
+
+# Получение всех пользователей конкретной группы
+def get_all_users_by_group(group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM users WHERE group_id == ?", (group_id,))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data

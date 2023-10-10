@@ -48,7 +48,7 @@ async def main():
 
     # Регистриуем роутеры в диспетчере
     dp.include_router(superadmin_handlers.router)
-    #dp.include_router(admin_handlers.router)
+    dp.include_router(admin_handlers.router)
     dp.include_router(user_handlers.router)
     dp.include_router(other_handlers.router)
 
