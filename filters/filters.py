@@ -68,10 +68,23 @@ class IsAddStatusAdmin(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data.startswith('admin_add_status_admin_')
 
+
 # Фильтр который ловит callback на удаление прав админа пользователя
 class IsDelStatusAdmin(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data.startswith('admin_del_status_admin_')
+
+
+# Фильтр который ловит callback на удаление пользователя из группы
+class IsDelUserFromGroup(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_del_user_')
+
+
+# Фильтр который ловит callback на удаление  группы
+class IsDelGroup(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_del_group_')
 
 
 #-------------------фильтры юзера---------------------------------------------------------------

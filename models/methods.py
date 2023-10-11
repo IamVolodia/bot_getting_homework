@@ -23,7 +23,7 @@ async def create_database():
             username VARCHAR(100),
             status_admin INTEGER CHECK (status_admin IN (0, 1)),
             group_id INT NULL,
-            FOREIGN KEY (group_id) REFERENCES groups (group_id)
+            FOREIGN KEY (group_id) REFERENCES groups (group_id) ON DELETE SET NULL
         )
     '''
     create_table_subjects_query = '''

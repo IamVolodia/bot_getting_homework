@@ -26,6 +26,8 @@ def create_admin_menu_users_keyboard(user_id) -> InlineKeyboardMarkup:
     # Добавляем кнопки с пользователями в клавиатуру
     kb_builder.row(*[InlineKeyboardButton(text=f'{"👑" if status_admin == 1 else "🎩"} {username} id = {user_id}',
                                           callback_data=f'user_id_{user_id}') for user_id, username, status_admin, group_id in data], width=1)
+    # Разделитьель пеользователей от кнопок
+    kb_builder.row(InlineKeyboardButton(text=LEXICON()['general']['fence'], callback_data="something"))
     # Генерируем остальные кнопки
     kb_builder.row(*[InlineKeyboardButton(text=text, callback_data=button) for button, text in buttons.items()], width=1)
 
@@ -66,5 +68,53 @@ def create_admin_menu_del_admin_keyboard(user_id) -> InlineKeyboardMarkup:
                                           callback_data=f'admin_del_status_admin_{user_id}') for user_id, username, status_admin, group_id in data], width=1)
     # Генерируем остальные кнопки
     kb_builder.row(*[InlineKeyboardButton(text=text, callback_data=button) for button, text in buttons.items()], width=1)
+
+    return kb_builder.as_markup()
+
+
+# Инлай клавиатура для меню admin, где перечислены участники группы, которых можно удалить из группы
+def create_admin_menu_del_user_keyboard(user_id) -> InlineKeyboardMarkup:
+    # Получаем кнопки меню
+    buttons = LEXICON()['admin']['admin_menu_users']['admin_menu_del_user']['buttons']
+    # Получаем group_id
+    group_id = get_user(user_id)[-1][-1]
+    # Получаем всех пользователей группы
+    data = get_all_users_by_group(group_id)
+    # Создаем клавиатуру
+    kb_builder = InlineKeyboardBuilder()
+    # Добавляем кнопки с пользователями в клавиатуру
+    kb_builder.row(*[InlineKeyboardButton(text=f'{"👑" if status_admin == 1 else "🎩"} {username} id = {user_id}',
+                                          callback_data=f'admin_del_user_{user_id}') for user_id, username, status_admin, group_id in data], width=1)
+    # Генерируем остальные кнопки
+    kb_builder.row(*[InlineKeyboardButton(text=text, callback_data=button) for button, text in buttons.items()], width=1)
+
+    return kb_builder.as_markup()
+
+
+# Инлай клавиатура для меню admin, при нажатии на кнопку Удалить группу
+def create_admin_menu_del_group_keyboard(user_id) -> InlineKeyboardMarkup:
+    # Получаем кнопки меню
+    buttons = LEXICON()['admin']['admin_menu_del_group']['buttons']
+    # Создаем клавиатуру
+    kb_builder = InlineKeyboardBuilder()
+    # Генерируем остальные кнопки
+    kb_builder.row(*[InlineKeyboardButton(text=text, callback_data=button) for button, text in buttons.items()], width=2)
+
+    return kb_builder.as_markup()
+
+
+
+# Инлай клавиатура для меню admin, при нажатии на кнопку Удалить группу, второй шанс
+def create_admin_menu_del_group_two_keyboard(user_id) -> InlineKeyboardMarkup:
+    # Получаем кнопки меню
+    buttons = LEXICON()['admin']['admin_menu_del_group']['admin_menu_del_group_two']['buttons']
+    # Получаем group_id
+    group_id = get_user(user_id)[-1][-1]
+    # Создаем клавиатуру
+    kb_builder = InlineKeyboardBuilder()
+    # Добавляем кнопку Да, которая будет скрывать в себе коллбек с id группы к удалению
+    kb_builder.add(InlineKeyboardButton(text='Да', callback_data=f"admin_del_group_{group_id}"))
+    # Генерируем остальные кнопки
+    kb_builder.add(*[InlineKeyboardButton(text=text, callback_data=button) for button, text in buttons.items()])
 
     return kb_builder.as_markup()

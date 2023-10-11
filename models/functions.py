@@ -119,7 +119,7 @@ def del_group(group_id):
     cursor = conn.cursor()
 
     # Удаляем группу
-    cursor.execute(f"DELETE FROM groups WHERE group_id = ? LIMIT 1;", (group_id,))
+    cursor.execute(f"DELETE FROM groups WHERE group_id = ?", (group_id,))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -171,3 +171,17 @@ def get_all_users_by_group(group_id):
     conn.close()
 
     return data
+
+
+# Удаление пользователя из группы
+def del_user_from_group(user_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"UPDATE users SET group_id == NULL WHERE user_id == ?", (user_id,))
+    conn.commit()
+    # Закрываем подключение к базе данных
+    conn.close()
