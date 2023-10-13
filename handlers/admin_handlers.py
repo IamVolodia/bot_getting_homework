@@ -3,13 +3,16 @@ from aiogram.filters import Command, StateFilter, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from keyboards.admin_kb import *
+from keyboards.calendar_kb import *
 from config_data.config import load_config
 from lexicon.lexicon import LEXICON
-from models.methods import add_group_to_database, add_user_to_database
-from models.functions import del_admin, add_admin, del_group, del_user_from_group
-from filters.filters import IsUserHaveStatusAdmin, IsAddStatusAdmin, IsDelStatusAdmin, IsDelUserFromGroup, IsDelGroup
+from models.methods import add_group_to_database, add_user_to_database, add_subject_to_database
+from models.functions import del_admin, add_admin, del_group, del_user_from_group, del_subject
+from filters.filters import (IsUserHaveStatusAdmin, IsAddStatusAdmin, IsDelStatusAdmin,
+                             IsDelUserFromGroup, IsDelGroup, IsDelSubjectFromGroup,
+                             IsFSMSubjectName, IsSubjectFromGroup)
 from aiogram.fsm.state import default_state
-from FSM.superadmin_fsm import FSMAssignment, FSMAddGroup
+from FSM.admin_fsm import FSMCreatSubject
 import _pickle as cPickle
 
 router = Router()
@@ -82,22 +85,22 @@ async def process_add_status_admin_press(callback: CallbackQuery, state: FSMCont
 #---------------------удаление пользователя---------------------------------------------------
 
 
-# Меню удаления статуса админа у пользователя группы
+# Меню удаления пользователя из группы
 @router.callback_query(F.data == 'admin_del_user', StateFilter(default_state), IsUserHaveStatusAdmin())
 async def process_admin_del_user_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_users']['admin_menu_del_user']['text_menu'],
                          reply_markup=create_admin_menu_del_user_keyboard(callback.from_user.id))
 
 
-# Удаление прав админа
+# Удаление пользователя из группы
 @router.callback_query(IsDelUserFromGroup(), StateFilter(default_state), IsUserHaveStatusAdmin())
 async def process_del_user_press(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id == int(callback.data.split("_")[-1]):
         await callback.answer(text=LEXICON()['admin']['admin_menu_users']['admin_menu_del_user']['del_yourself'], show_alert=True)
     else:
         del_user_from_group(int(callback.data.split("_")[-1]))
-    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_users']['admin_menu_del_admin']['text_menu'],
-                         reply_markup=create_admin_menu_del_admin_keyboard(callback.from_user.id))
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_users']['admin_menu_del_user']['text_menu'],
+                         reply_markup=create_admin_menu_del_user_keyboard(callback.from_user.id))
 
 
 #---------------------хендлеры по нажатию кнопки 'Удаление группы'--------------------------------------------------------
@@ -125,6 +128,78 @@ async def process_del_user_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_del_group']['admin_menu_del_group_two']['group_deleted'])
 
 
+
+#---------------------инлайн клавиатура с предметами группы группы-------------------------------------------
+
+
+# Меню админа со списком предметов группы
+@router.callback_query(F.data == 'admin_subjects', StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_admin_subjects_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_subjects']['text_menu'],
+                         reply_markup=create_admin_menu_subjects_keyboard(callback.from_user.id))
+
+
+#---------------------инлайн клавиатура с предметами группы к удалению----------------------------------
+
+
+# Меню админа со списком предметов группы к удалению
+@router.callback_query(F.data == 'admin_del_subject', StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_admin_del_subject_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_subjects']['admin_menu_del_subject']['text_menu'],
+                         reply_markup=create_admin_menu_del_subjects_keyboard(callback.from_user.id))
+
+
+# Удаление предмета из группы
+@router.callback_query(IsDelSubjectFromGroup(), StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_del_subject_press(callback: CallbackQuery, state: FSMContext):
+    del_subject(int(callback.data.split("_")[-1]))
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_subjects']['admin_menu_del_subject']['text_menu'],
+                         reply_markup=create_admin_menu_del_subjects_keyboard(callback.from_user.id))
+
+
+
+#---------------------------------машина состояний по созданию предмета----------------------------------------------------
+
+
+# Хендлер на запуск машины состояний по созданию предмета
+@router.callback_query(F.data == 'admin_add_subject', StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_admin_add_subject_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_subjects']['FSM_creat_subject']['entering_name'])
+    await state.set_state(FSMCreatSubject.fill_name)
+
+
+# Этот хэндлер будет срабатывать, если введено корректное название предмета
+@router.message(StateFilter(FSMCreatSubject.fill_name), IsFSMSubjectName(), IsUserHaveStatusAdmin())
+async def process_admin_name_subject_sent(message: Message, state: FSMContext):
+    group_id = get_user(message.from_user.id)[-1][-1]
+    await add_subject_to_database(message.text, group_id)
+    # Завершаем машину состояний
+    await state.clear()
+    # Вызываем меню предметов
+    await message.answer(text=LEXICON()['admin']['admin_menu_subjects']['text_menu'],
+                         reply_markup=create_admin_menu_subjects_keyboard(message.from_user.id))
+
+
+# Этот хэндлер будет срабатывать, если во время ввода названия предмета
+# будет введено что-то некорректное
+@router.message(StateFilter(FSMCreatSubject.fill_name), IsUserHaveStatusAdmin())
+async def warning_admin_name_subject(message: Message):
+    await message.answer(text=LEXICON()['admin']['admin_menu_subjects']['FSM_creat_subject']['name_entry_error'])
+
+
+
+#---------------------------------меню конкретного предмета, календарь------------------------------------------
+
+
+# Меню админа - меню предметов - предмет
+@router.callback_query(F.data == 'admin_calendar', StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_admin_calendar_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_calendar']['text_menu'],
+                         reply_markup=create_calendar_keyboard(status="admin"))
+
+
+
+
 #---------------------хендлеры по нажатию кнопки 'назад'--------------------------------------------------------
 
 
@@ -141,30 +216,9 @@ async def process_admin_users_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_users']['text_menu'],
                          reply_markup=create_admin_menu_users_keyboard(callback.from_user.id))
 
-#--------------------------------------------------------------------------------------------------------------------
 
-
-
-# # Добавление админа в группу
-# @router.callback_query(F.data == 'admin_add_admin', StateFilter(default_state))
-# async def process_add_admin_press(callback: CallbackQuery, state: FSMContext):
-#     await callback.message.edit_text(text=LEXICON()['superadmin']['menu_admins']['add_admin_text_menu'])
-#     await state.set_state(FSMAssignment.fill_new_admin_id)
-
-
-# # Этот хэндлер будет срабатывать, если введено корректное id
-# # и переводить в состояние ожидания ввода возраста
-# @router.message(StateFilter(FSMAssignment.fill_new_admin_id), IsFSMRightID())
-# async def process_user_id_sent(message: Message, state: FSMContext):
-#     # Даем права админа пользователю
-#     add_admin(message.text)
-#     await message.answer(text=LEXICON()['superadmin']['menu_admins']['true_id_FSM'])
-#     # Завершаем машину состояний
-#     await state.clear()
-
-
-# # Этот хэндлер будет срабатывать, если во время ввода id
-# # будет введено что-то некорректное
-# @router.message(StateFilter(FSMAssignment.fill_new_admin_id))
-# async def warning_not_user_id(message: Message):
-#     await message.answer(text=LEXICON()['superadmin']['menu_admins']['false_id_FSM'])
+# Кнопка возвращения в меню со списком предметов группы
+@router.callback_query(F.data == 'admin_back_to_menu_subject', StateFilter(default_state), IsUserHaveStatusAdmin())
+async def process_admin_subjects_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_subjects']['text_menu'],
+                         reply_markup=create_admin_menu_subjects_keyboard(callback.from_user.id))

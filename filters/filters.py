@@ -1,6 +1,21 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery, Message
-from models.functions import get_user, get_group_by_name
+from models.functions import get_user, get_group_by_name, get_subject_by_name
+
+
+# Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
+class IsFSMGroupName(BaseFilter):
+    async def __call__(self, message: Message) -> bool:
+        data = True
+        if 1 <= len(message.text) <= 100:
+            data = get_group_by_name(message.text)
+            if data == []:
+                data = True
+            else:
+                data = False
+        else:
+            data = False
+        return data
 
 
 #-------------------фильтры суперадмина--------------------------------------------------------------
@@ -33,20 +48,6 @@ class IsFSMRightID(BaseFilter):
                 data = False
             else:
                 data = True
-        else:
-            data = False
-        return data
-
-# Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
-class IsFSMGroupName(BaseFilter):
-    async def __call__(self, message: Message) -> bool:
-        data = True
-        if 1 <= len(message.text) <= 100:
-            data = get_group_by_name(message.text)
-            if data == []:
-                data = True
-            else:
-                data = False
         else:
             data = False
         return data
@@ -87,6 +88,29 @@ class IsDelGroup(BaseFilter):
         return callback.data.startswith('admin_del_group_')
 
 
+# Фильтр который ловит callback на удаление предмета из группы
+class IsDelSubjectFromGroup(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_del_subject_')
+
+
+# Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
+class IsFSMSubjectName(BaseFilter):
+    async def __call__(self, message: Message) -> bool:
+        if 1 <= len(message.text) <= 100:
+            group_id = get_user(message.from_user.id)[-1][-1]
+            data = get_subject_by_name(message.text, group_id)
+            if not data:
+                return True
+        return False
+
+
+# Фильтр который ловит callback на меню конкретного предмета
+class IsSubjectFromGroup(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_subject_id_')
+
+
 #-------------------фильтры юзера---------------------------------------------------------------
 
 
@@ -96,3 +120,10 @@ class IsUserNotHaveGroup(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         data = get_user(message.from_user.id)
         return data == [] or data[0][-1] == None
+
+
+# Фильтр который проверяет существует ли группа с таким именем
+class IsGroupByThatName(BaseFilter):
+    async def __call__(self, message: Message) -> bool:
+        data = get_group_by_name(message.text)
+        return data[0]

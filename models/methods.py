@@ -8,6 +8,8 @@ async def create_database():
     # Создание курсора для выполнения SQL-запросов
     cursor = conn.cursor()
 
+    cursor.execute("PRAGMA foreign_keys=on")
+
     # Создание таблицы
     create_table_groups_query = '''
         CREATE TABLE IF NOT EXISTS groups (
@@ -22,7 +24,7 @@ async def create_database():
             user_id INT PRIMARY KEY,
             username VARCHAR(100),
             status_admin INTEGER CHECK (status_admin IN (0, 1)),
-            group_id INT NULL,
+            group_id INTEGER NULL,
             FOREIGN KEY (group_id) REFERENCES groups (group_id) ON DELETE SET NULL
         )
     '''
@@ -30,7 +32,7 @@ async def create_database():
         CREATE TABLE IF NOT EXISTS subjects (
             subject_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             name VARCHAR(100),
-            group_id INT,
+            group_id INTEGER,
             FOREIGN KEY (group_id) REFERENCES groups (group_id) ON DELETE CASCADE
         )
     '''
@@ -39,7 +41,7 @@ async def create_database():
             homework_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             work_date DATE,
             message TEXT,
-            subject_id INT,
+            subject_id INTEGER,
             FOREIGN KEY (subject_id) REFERENCES subjects (subject_id) ON DELETE CASCADE
         )
     '''
@@ -49,6 +51,7 @@ async def create_database():
     cursor.execute(create_table_subjects_query)
     cursor.execute(create_table_homeworks_query)
     conn.commit()
+    conn.close()
 
 
 
@@ -95,6 +98,28 @@ async def add_user_to_database(user_id, username, status_admin=False, group_id=N
         else:
             # Изменяем имя в базе данных, т.к. пользователь мог его изменить в телеграмм
             cursor.execute("UPDATE users SET username = ? WHERE user_id = ?", (username, user_id))
+            conn.commit()
+
+    finally:
+        # Закрываем подключение к базе данных
+        conn.close()
+
+
+# Добавляем предмет в базу данных
+async def add_subject_to_database(name, group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    try:
+        # Проверяем наличие предмета в базе данных
+        cursor.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (name,))
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            # Если предмета нет в базе данных, добавляем его
+            cursor.execute("INSERT INTO subjects (name, group_id) VALUES (?, ?)", (name, group_id))
             conn.commit()
 
     finally:
