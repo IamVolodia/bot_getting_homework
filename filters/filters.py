@@ -1,6 +1,6 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery, Message
-from models.functions import get_user, get_group_by_name, get_subject_by_name
+from models.functions import get_user, get_group_by_name, get_subject_by_name, get_all_subjects_by_group
 
 
 # Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
@@ -94,7 +94,7 @@ class IsDelSubjectFromGroup(BaseFilter):
         return callback.data.startswith('admin_del_subject_')
 
 
-# Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
+# Фильтр который проверяет правильность ввода имени предмета и есть ли она в базе данных
 class IsFSMSubjectName(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         if 1 <= len(message.text) <= 100:
@@ -109,6 +109,29 @@ class IsFSMSubjectName(BaseFilter):
 class IsSubjectFromGroup(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data.startswith('admin_subject_id_')
+
+
+# Фильтр который ловит callback на дату
+class IsRightDate(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_date_') and callback.data.split('_')[-1] != ' '
+
+
+
+# Фильтр который ловит callback на добавление ДЗ
+class IsAddHomework(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_add_homework_')
+
+
+# Фильтр который проверяет, есть ли предметы у группы
+class IsGroupHaveSubject(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        # Получаем group_id
+        group_id = get_user(callback.from_user.id)[-1][-1]
+        # Получаем все предметы группы
+        data = get_all_subjects_by_group(group_id)
+        return data
 
 
 #-------------------фильтры юзера---------------------------------------------------------------

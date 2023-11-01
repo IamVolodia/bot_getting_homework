@@ -40,7 +40,9 @@ async def create_database():
         CREATE TABLE IF NOT EXISTS homeworks (
             homework_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             work_date DATE,
-            message TEXT,
+            file_id TEXT NULL,
+            text TEXT NULL,
+            type_message VARCHAR(100) NOT NULL,
             subject_id INTEGER,
             FOREIGN KEY (subject_id) REFERENCES subjects (subject_id) ON DELETE CASCADE
         )
@@ -77,6 +79,21 @@ async def add_group_to_database(name, password):
         # Закрываем подключение к базе данных
         conn.close()
 
+
+
+# Добавляем домашнее задание в базу данных
+async def add_homework_to_database(date, type_messege, subject_id, text=None, file_id=None):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Добавляем дз
+    cursor.execute("INSERT INTO homeworks (work_date, file_id, text, type_message, subject_id) VALUES (?, ?, ?, ?, ?)", (date, file_id, text, type_messege, subject_id))
+    conn.commit()
+
+    # Закрываем подключение к базе данных
+    conn.close()
 
 # Добавляем пользователя в базу данных
 async def add_user_to_database(user_id, username, status_admin=False, group_id=None):

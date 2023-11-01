@@ -251,3 +251,25 @@ def del_subject(subject_id):
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
+
+
+# Получаем все предметы группы, где есть домашние задание на конкретную дату
+def get_subject_with_homework_for_date(group_id, date):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    query = '''
+        SELECT subjects.name, subjects.subject_id, homeworks.text
+        FROM homeworks
+        INNER JOIN subjects ON homeworks.subject_id = subjects.subject_id
+        WHERE homeworks.work_date = ? AND subjects.group_id = ?
+    '''
+    cursor.execute(query, (date, group_id))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data
