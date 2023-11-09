@@ -197,7 +197,7 @@ def create_admin_menu_date_keyboard(user_id, date) -> InlineKeyboardMarkup:
     # Добавляем кнопки с предметами в клавиатуру
     if data:
         kb_builder.row(*[InlineKeyboardButton(text=name,
-                                              callback_data=f'admin_date_subject_id_{subject_id}_{date}') for name, subject_id, message in data], width=1)
+                                              callback_data=f'admin_date_subject_id_{subject_id}_{date}') for name, subject_id in data], width=1)
     else:
         kb_builder.row(InlineKeyboardButton(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['no_homework'], callback_data='something'))
     # Разделитьель предметов от кнопок
@@ -223,5 +223,32 @@ def create_FSM_all_subjects_keyboard(user_id) -> InlineKeyboardMarkup:
                                               callback_data=f'admin_FSM_subject_id_{subject_id}') for subject_id, name, group_id in data], width=1)
     else:
         kb_builder.row(InlineKeyboardButton(text=LEXICON()['admin']['admin_menu_subjects']['no_subjects'], callback_data='something'))
+
+    return kb_builder.as_markup()
+
+
+# Инлай клавиатура для меню admin, где перечислены предметы группы
+def create_admin_menu_del_homework_keyboard(user_id, date) -> InlineKeyboardMarkup:
+    # Получаем кнопки меню
+    buttons = LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['admin_del_homework']['buttons']
+    # Получаем год, месяц, день
+    year, month, day = date.split('_')[-3:]
+    date = f"{year}-{month}-{day}"
+    # Получаем group_id
+    group_id = get_user(user_id)[-1][-1]
+    # Получаем все предметы группы, где есть домашние задание на конкретную дату
+    data = get_subject_with_homework_for_date(group_id, date)
+    # Создаем клавиатуру
+    kb_builder = InlineKeyboardBuilder()
+    # Добавляем кнопки с предметами в клавиатуру
+    if data:
+        kb_builder.row(*[InlineKeyboardButton(text=f"♻️ {name}",
+                                              callback_data=f'admin_date_del_homework_subject_id_{subject_id}_{date}') for name, subject_id in data], width=1)
+    else:
+        kb_builder.row(InlineKeyboardButton(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['no_homework'], callback_data='something'))
+    # Разделитьель предметов от кнопок
+    kb_builder.row(InlineKeyboardButton(text=LEXICON()['general']['fence'], callback_data="fence"))
+    # Генерируем остальные кнопки
+    kb_builder.row(*[InlineKeyboardButton(text=text, callback_data=f"{button}_{year}_{month}_{day}") for button, text in buttons.items()], width=1)
 
     return kb_builder.as_markup()

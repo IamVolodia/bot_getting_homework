@@ -1,6 +1,6 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery, Message
-from models.functions import get_user, get_group_by_name, get_subject_by_name, get_all_subjects_by_group
+from models.functions import get_subject_by_id_and_group_id, get_user, get_group_by_name, get_subject_by_name, get_all_subjects_by_group
 
 
 # Фильтр который проверяет правильность ввода имени группы и есть ли она в базе данных
@@ -61,7 +61,9 @@ class IsFSMRightID(BaseFilter):
 class IsUserHaveStatusAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         data = get_user(message.from_user.id)
-        return data == [] or data[0][-2] == 1
+        if data == []:
+            return False
+        return data[0][-2] == 1
 
 
 # Фильтр который ловит callback на назначение прав админа пользователю
@@ -114,8 +116,7 @@ class IsSubjectFromGroup(BaseFilter):
 # Фильтр который ловит callback на дату
 class IsRightDate(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
-        return callback.data.startswith('admin_date_') and callback.data.split('_')[-1] != ' '
-
+        return callback.data.startswith('admin_date_') and all(i.isdigit() for i in callback.data.split('_')[-3:])
 
 
 # Фильтр который ловит callback на добавление ДЗ
@@ -123,6 +124,12 @@ class IsAddHomework(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data.startswith('admin_add_homework_')
 
+
+# Фильтр который ловит callback на удаление ДЗ
+class IsDelHomework(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_del_homework_')
+    
 
 # Фильтр который проверяет, есть ли предметы у группы
 class IsGroupHaveSubject(BaseFilter):
@@ -132,6 +139,26 @@ class IsGroupHaveSubject(BaseFilter):
         # Получаем все предметы группы
         data = get_all_subjects_by_group(group_id)
         return data
+
+
+# Фильтр который проверят, есть ли такой предмет в базе данных в данной группе
+class SubjectExistsInGroup(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        group_id = get_user(callback.from_user.id)[-1][-1]
+        data = get_subject_by_id_and_group_id(callback.data.split("_")[-1], group_id)
+        return data
+
+
+# Фильтр который ловит callback на ретный предмет по которому есть дз в конкретной дате
+class IsSubjectFromCalendar(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_date_subject_id_')
+
+
+# Фильтр который ловит callback на удаление домашнего задания у предмета за конкрентую дату
+class IsDelHomeworkFromSubjectForDate(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data.startswith('admin_date_del_homework_subject_id_')
 
 
 #-------------------фильтры юзера---------------------------------------------------------------

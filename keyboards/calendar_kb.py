@@ -10,7 +10,7 @@ import calendar
 def create_calendar_keyboard(status, date) -> InlineKeyboardMarkup:
     # Плучаем нужынй год и месяц из даты
     if type(date) == str:
-        year, month, day = map(int, date.split("_")[-3:])
+        year, month = map(int, date.split("_")[-2:])
     else:
         year, month = date.year, date.month
     # Получаем номер дня недели с которого начинается месяц и дней в месяце

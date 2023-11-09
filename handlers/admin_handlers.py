@@ -4,17 +4,19 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from keyboards.admin_kb import *
 from keyboards.calendar_kb import *
-from config_data.config import load_config
 from lexicon.lexicon import LEXICON
 from models.methods import add_group_to_database, add_user_to_database, add_subject_to_database
-from models.functions import del_admin, add_admin, del_group, del_user_from_group, del_subject, get_subject_by_name
+from models.functions import (del_admin, add_admin, del_group,
+                              del_user_from_group, del_subject, get_subject_by_id,
+                              del_homework_from_sebject_for_date)
 from filters.filters import (IsUserHaveStatusAdmin, IsAddStatusAdmin, IsDelStatusAdmin,
                              IsDelUserFromGroup, IsDelGroup, IsDelSubjectFromGroup,
-                             IsFSMSubjectName, IsSubjectFromGroup, IsRightDate,
-                             IsGroupHaveSubject, IsAddHomework)
+                             IsFSMSubjectName, IsDelHomeworkFromSubjectForDate, IsRightDate,
+                             IsGroupHaveSubject, IsAddHomework, SubjectExistsInGroup,
+                             IsSubjectFromCalendar, IsDelHomework)
 from aiogram.fsm.state import default_state
 from FSM.admin_fsm import *
-from utils.utils import save_message_to_database
+from utils.utils import save_message_to_database, get_homeworks_from_database
 
 router = Router()
 router.message.filter(IsUserHaveStatusAdmin())
@@ -234,7 +236,7 @@ async def process_admin_add_homework_wrong_press(callback: CallbackQuery, state:
 
 
 # Этот хэндлер будет срабатывать на название предмета
-@router.callback_query(StateFilter(FSMAddHomework.fill_subject_name))
+@router.callback_query(StateFilter(FSMAddHomework.fill_subject_name), SubjectExistsInGroup())
 async def process_admin_name_subject_for_homework_sent(callback: CallbackQuery, state: FSMContext):
     subject_id = callback.data.split('_')[-1]
     await state.update_data(subject_id=subject_id)
@@ -252,13 +254,73 @@ async def process_admin_message_save_to_db(message: Message, state: FSMContext):
     await save_message_to_database(date=data["date"], subject_id=data["subject_id"], message=message)
     # Завершаем машину состояний
     await state.clear()
-    await message.answer(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['FSM_add_homework']['successful_add'])
-    await message.answer(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['text_menu'],
-                         reply_markup=create_admin_menu_date_keyboard(user_id=message.from_user.id, date=data["date"].replece('-', '_')))
+    await message.answer(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['FSM_add_homework']['successful_add'],
+                         reply_markup=create_admin_menu_date_keyboard(user_id=message.from_user.id, date=data["date"].replace('-', '_')))
+
+
+#----------------------открытие календаря в главном меню - выбор даты -------------------------------------------
+
+
+# Хендлер на конкретный предмет за определенную дату
+@router.callback_query(IsSubjectFromCalendar(), StateFilter(default_state))
+async def process_admin_subject_in_date_press(callback: CallbackQuery):
+    # Получаем id предмета и даду
+    subject_id, date = callback.data.split("_")[-2:]
+    # Плучаем название предмета по id
+    subject_name = get_subject_by_id(subject_id)
+    # Отправляем сообщением название предмета, по которому необходимо дз
+    await callback.message.answer(text=f"Домашние задания по {subject_name[0][1]} за {date}:")
+    # Отправка сообщение всей домашней работы по выбраному предмету за эту дату
+    await get_homeworks_from_database(date=date, subject_id=subject_id, callback=callback)
+    await callback.message.answer(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['text_menu'],
+                         reply_markup=create_admin_menu_date_keyboard(user_id=callback.from_user.id, date=date.replace('-', '_')))
+
+
+# Получение всех домашних заданий за определенную дату
+@router.callback_query(IsSubjectFromCalendar(), StateFilter(default_state))
+async def process_admin_subject_in_date_press(callback: CallbackQuery):
+    # Получаем id предмета и даду
+    subject_id, date = callback.data.split("_")[-2:]
+    # Плучаем название предмета по id
+    subject_name = get_subject_by_id(subject_id)
+    # Отправляем сообщением название предмета, по которому необходимо дз
+    await callback.message.answer(text=f"Домашние задания по {subject_name[0][1]} за {date}:")
+    # Отправка сообщение всей домашней работы по выбраному предмету за эту дату
+    await get_homeworks_from_database(date=date, subject_id=subject_id, callback=callback)
+    await callback.message.answer(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['text_menu'],
+                         reply_markup=create_admin_menu_date_keyboard(user_id=callback.from_user.id, date=date.replace('-', '_')))
+
+
+
+#---------------------инлайн клавиатура с предмета по которым необходимо удалить домашнее задание--------------------
+
+
+# Меню конкретной даты со списком предметов к удалению у них дз
+@router.callback_query(IsDelHomework(), StateFilter(default_state))
+async def process_admin_del_homework_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['admin_del_homework']['text_menu'],
+                                     reply_markup=create_admin_menu_del_homework_keyboard(callback.from_user.id, date=callback.data))
+
+
+# Удаление домашнего задания у конкреного предмета
+@router.callback_query(IsDelHomeworkFromSubjectForDate(), StateFilter(default_state))
+async def process_del_homework_from_sebject_for_date_press(callback: CallbackQuery):
+    subject_id, date = callback.data.split("_")[-2:]
+    # Удаление домашнего задания у предмета за дату
+    del_homework_from_sebject_for_date(subject_id, date)
+    await callback.message.edit_text(text=LEXICON()['admin']['admin_menu_calendar']['admin_menu_date']['admin_del_homework']['text_menu'],
+                                     reply_markup=create_admin_menu_del_homework_keyboard(callback.from_user.id, date=callback.data.split("_")[-1].replace('-', '_')))
+
 
 
 #---------------------хендлеры по нажатию кнопки 'назад'--------------------------------------------------------
 
+
+# Кнопка возвращение в меню конкрентной даты
+@router.callback_query(F.data == 'admin_back_to_menu', StateFilter(default_state))
+async def process_admin_users_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['text_menu'],
+                         reply_markup=create_start_keyboard_if_admin())
 
 # Кнопка возвращение в меню админа
 @router.callback_query(F.data == 'admin_back_to_menu', StateFilter(default_state))
