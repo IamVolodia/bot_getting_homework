@@ -1,4 +1,5 @@
 import sqlite3
+from utils.utils import change_date
 
 
 # Получаем группу пользователя из базы данных
@@ -19,7 +20,7 @@ def get_user_group(user_id):
 
 
 # Получаем данные группы из базы данных
-def get_date_group(group_id):
+def get_data_group(group_id):
     # Создание подключения к базе данных
     conn = sqlite3.connect('models//database.db')
     # Создание курсора для выполнения SQL-запросов
@@ -144,6 +145,22 @@ def get_group_by_name(name):
     return data
 
 
+# Получение группы по id
+def get_group_by_group_id(group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM groups WHERE group_id == ?", (group_id,))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data
+
+
 # Получение предмета по имени и group_id
 def get_subject_by_name(name, group_id):
     # Создание подключения к базе данных
@@ -260,9 +277,12 @@ def get_subject_with_homework_for_date(group_id, date):
     # Создание курсора для выполнения SQL-запросов
     cursor = conn.cursor()
 
+    # Добавляем нолик к дню даты
+    date = change_date(date)
+
     # Получаем все данные из таблицы
     query = '''
-        SELECT subjects.name, subjects.subject_id, homeworks.text
+        SELECT DISTINCT subjects.name, subjects.subject_id
         FROM homeworks
         INNER JOIN subjects ON homeworks.subject_id = subjects.subject_id
         WHERE homeworks.work_date = ? AND subjects.group_id = ?
@@ -271,5 +291,136 @@ def get_subject_with_homework_for_date(group_id, date):
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
+    
+    return data
+
+
+# Получение предмета по id и group_id
+def get_subject_by_id_and_group_id(subject_id, group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM subjects WHERE subject_id == ? AND group_id == ?", (subject_id, group_id))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
 
     return data
+
+
+# Получаем все домашние задания за конкртную дату и группу
+def get_homework_for_date_and_subject(date, group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Добавляем нолик к дню даты
+    date = change_date(date)
+
+    # Получаем все данные из таблицы
+    query = '''
+        SELECT *
+        FROM homeworks
+        WHERE work_date = ? AND subject_id = ?
+    '''
+    cursor.execute(query, (date, group_id))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+    
+    return data
+
+
+# Получаем все домашние задания за определенный месяц и группу
+def get_homework_for_year_month_and_group(date, group_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Добавляем нолик к дню даты
+    date = change_date(date)
+
+    # Получаем все данные из таблицы
+    query = '''
+        SELECT h.*
+        FROM homeworks h
+        JOIN subjects s ON h.subject_id = s.subject_id
+        JOIN groups g ON s.group_id = g.group_id
+        WHERE strftime('%Y-%m', h.work_date) = ?
+        AND g.group_id = ?
+    '''
+    cursor.execute(query, (date, group_id))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+    
+    return data
+
+
+# Получение предмета по id и group_id
+def get_subject_by_id(subject_id):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Получаем все данные из таблицы
+    cursor.execute(f"SELECT * FROM subjects WHERE subject_id == ?", (subject_id,))
+    data = cursor.fetchall()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+    return data
+
+
+# Удаление домашнего задания у группы за конкретную дату
+def del_homework_from_sebject_for_date(subject_id, date):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+    # Разрешаем внешние ключи
+    cursor.execute("PRAGMA foreign_keys=on")
+
+    # Добавляем нолик к дню даты
+    date = change_date(date)
+
+    # Удаляем группу
+    cursor.execute(f"DELETE FROM homeworks WHERE work_date = ? and subject_id = ?", (date, subject_id))
+    conn.commit()
+
+    # Закрываем подключение к базе данных
+    conn.close()
+
+
+# Изменение имени группы
+def change_name_group(group_id, new_name):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Изменяем имя группы
+    cursor.execute(f"UPDATE groups SET name == ? WHERE group_id == ?", (new_name, group_id))
+    conn.commit()
+    # Закрываем подключение к базе данных
+    conn.close()
+
+
+# Изменение пароля группы
+def change_password_group(group_id, new_password):
+    # Создание подключения к базе данных
+    conn = sqlite3.connect('models//database.db')
+    # Создание курсора для выполнения SQL-запросов
+    cursor = conn.cursor()
+
+    # Изменяем пароль группы
+    cursor.execute(f"UPDATE groups SET password == ? WHERE group_id == ?", (new_password, group_id))
+    conn.commit()
+    # Закрываем подключение к базе данных
+    conn.close()

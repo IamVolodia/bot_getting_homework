@@ -10,3 +10,13 @@ class FSMAddHomework(StatesGroup):
     fill_date = State()
     fill_subject_name = State()
     fill_message = State()
+
+
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний по изменению имени группы
+class FSMChangeNameGroup(StatesGroup):
+    fill_name = State()
+
+
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний по изменению пароля группы
+class FSMChangePasswordGroup(StatesGroup):
+    fill_password = State()

@@ -6,8 +6,7 @@ from config_data.config import Config, load_config
 from handlers import superadmin_handlers, admin_handlers, user_handlers, other_handlers
 from keyboards.main_menu import set_main_menu
 from models.methods import create_database
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import default_state, State, StatesGroup
+from aiogram.fsm.state import default_state
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 
 # Создаем таблицы базы даннх
