@@ -441,6 +441,12 @@ async def warning_admin_not_name_group(message: Message):
 #---------------------хендлеры по нажатию кнопки 'назад'--------------------------------------------------------
 
 
+# Кнопка возвращение в меню конкрентной даты
+@router.callback_query(F.data == 'admin_back_to_menu', StateFilter(default_state))
+async def process_admin_users_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(text=LEXICON()['admin']['text_menu'],
+                         reply_markup=create_start_keyboard_if_admin())
+
 # Кнопка возвращение в меню админа
 @router.callback_query(F.data == 'admin_back_to_menu', StateFilter(default_state))
 async def process_admin_back_to_menu_press(callback: CallbackQuery):
