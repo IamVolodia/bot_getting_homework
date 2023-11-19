@@ -60,7 +60,7 @@ def get_all_admins():
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute("SELECT user_id, username FROM users WHERE status_admin == 1")
+    cursor.execute("SELECT user_id, username FROM users WHERE status_admin = 1")
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -76,7 +76,7 @@ def del_admin(user_id):
     cursor = conn.cursor()
 
     # Изменяем в статусе админ права на false
-    cursor.execute(f"UPDATE users SET status_admin == 0 WHERE user_id == ?", (user_id,))
+    cursor.execute(f"UPDATE users SET status_admin = 0 WHERE user_id = ?", (user_id,))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -90,7 +90,7 @@ def add_admin(user_id):
     cursor = conn.cursor()
 
     # Изменяем в статусе админ права на true
-    cursor.execute(f"UPDATE users SET status_admin == 1 WHERE user_id == ?", (user_id,))
+    cursor.execute(f"UPDATE users SET status_admin = 1 WHERE user_id = ?", (user_id,))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -104,7 +104,7 @@ def get_user(user_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM users WHERE user_id == ?", (user_id,))
+    cursor.execute(f"SELECT * FROM users WHERE user_id = ?", (user_id,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -121,7 +121,7 @@ def del_group(group_id):
     # Разрешаем внешние ключи
     cursor.execute("PRAGMA foreign_keys=on")
     # Удаляем права админа у пользователей группы
-    cursor.execute(f"UPDATE users SET status_admin == 0 WHERE group_id == ?", (group_id,))
+    cursor.execute(f"UPDATE users SET status_admin = 0 WHERE group_id = ?", (group_id,))
     # Удаляем группу
     cursor.execute(f"DELETE FROM groups WHERE group_id = ?", (group_id,))
     conn.commit()
@@ -137,7 +137,7 @@ def get_group_by_name(name):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM groups WHERE name == ?", (name,))
+    cursor.execute(f"SELECT * FROM groups WHERE name = ?", (name,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -153,7 +153,7 @@ def get_group_by_group_id(group_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM groups WHERE group_id == ?", (group_id,))
+    cursor.execute(f"SELECT * FROM groups WHERE group_id = ?", (group_id,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -169,7 +169,7 @@ def get_subject_by_name(name, group_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM subjects WHERE name == ? AND group_id == ?", (name, group_id))
+    cursor.execute(f"SELECT * FROM subjects WHERE name = ? AND group_id = ?", (name, group_id))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -185,7 +185,7 @@ def add_group(name, password):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM groups WHERE name == ?", (name,))
+    cursor.execute(f"SELECT * FROM groups WHERE name = ?", (name,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -201,7 +201,7 @@ def get_all_users_by_group(group_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM users WHERE group_id == ?", (group_id,))
+    cursor.execute(f"SELECT * FROM users WHERE group_id = ?", (group_id,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -217,7 +217,7 @@ def del_user_from_group(user_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"UPDATE users SET group_id == NULL AND status_admin == 0 WHERE user_id == ?", (user_id,))
+    cursor.execute(f"UPDATE users SET group_id = NULL, status_admin = 0 WHERE user_id = ?", (user_id,))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -230,10 +230,10 @@ def add_user_to_group(user_id, group_id = None, group_name = None):
     # Создание курсора для выполнения SQL-запросов
     cursor = conn.cursor()
     if group_name != None:
-        cursor.execute(f"SELECT * FROM groups WHERE name == ?", (group_name,))
+        cursor.execute(f"SELECT * FROM groups WHERE name = ?", (group_name,))
         group_id = cursor.fetchall()[-1][0]
     # Привязываем пользователя к группе
-    cursor.execute(f"UPDATE users SET group_id == ? WHERE user_id == ?", (group_id, user_id))
+    cursor.execute(f"UPDATE users SET group_id = ? WHERE user_id = ?", (group_id, user_id))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -247,7 +247,7 @@ def get_all_subjects_by_group(group_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM subjects WHERE group_id == ?", (group_id,))
+    cursor.execute(f"SELECT * FROM subjects WHERE group_id = ?", (group_id,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -303,7 +303,7 @@ def get_subject_by_id_and_group_id(subject_id, group_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM subjects WHERE subject_id == ? AND group_id == ?", (subject_id, group_id))
+    cursor.execute(f"SELECT * FROM subjects WHERE subject_id = ? AND group_id = ?", (subject_id, group_id))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -370,7 +370,7 @@ def get_subject_by_id(subject_id):
     cursor = conn.cursor()
 
     # Получаем все данные из таблицы
-    cursor.execute(f"SELECT * FROM subjects WHERE subject_id == ?", (subject_id,))
+    cursor.execute(f"SELECT * FROM subjects WHERE subject_id = ?", (subject_id,))
     data = cursor.fetchall()
     # Закрываем подключение к базе данных
     conn.close()
@@ -406,7 +406,7 @@ def change_name_group(group_id, new_name):
     cursor = conn.cursor()
 
     # Изменяем имя группы
-    cursor.execute(f"UPDATE groups SET name == ? WHERE group_id == ?", (new_name, group_id))
+    cursor.execute(f"UPDATE groups SET name = ? WHERE group_id = ?", (new_name, group_id))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
@@ -420,7 +420,7 @@ def change_password_group(group_id, new_password):
     cursor = conn.cursor()
 
     # Изменяем пароль группы
-    cursor.execute(f"UPDATE groups SET password == ? WHERE group_id == ?", (new_password, group_id))
+    cursor.execute(f"UPDATE groups SET password = ? WHERE group_id = ?", (new_password, group_id))
     conn.commit()
     # Закрываем подключение к базе данных
     conn.close()
